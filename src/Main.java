@@ -100,21 +100,25 @@ public class Main {
                     }
                 }
             }
-            arr = jitCompile(toPreExecute, "", 0, null, 0);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PrintStream nativeOut = System.out;
-            System.setOut(new PrintStream(out));
-            Class clazz = new ByteCodeLoader().loadClass(arr);
-            clazz.getDeclaredMethod("main", String[].class).invoke(null, (Object) new String[0]);
-            System.setOut(nativeOut);
-            String output = new String(out.toByteArray());
-            Field cellsField = clazz.getDeclaredField("cells");
-            cellsField.setAccessible(true);
-            byte[] cells = (byte[])cellsField.get(null);
-            Field indexField = clazz.getDeclaredField("index");
-            indexField.setAccessible(true);
-            int index = indexField.getInt(null);
-            arr = jitCompile(code, output, toPreExecute.length(), cells, index);
+            if (toPreExecute.length() > 0) {
+                arr = jitCompile(toPreExecute, "", 0, null, 0);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                PrintStream nativeOut = System.out;
+                System.setOut(new PrintStream(out));
+                Class clazz = new ByteCodeLoader().loadClass(arr);
+                clazz.getDeclaredMethod("main", String[].class).invoke(null, (Object) new String[0]);
+                System.setOut(nativeOut);
+                String output = new String(out.toByteArray());
+                Field cellsField = clazz.getDeclaredField("cells");
+                cellsField.setAccessible(true);
+                byte[] cells = (byte[]) cellsField.get(null);
+                Field indexField = clazz.getDeclaredField("index");
+                indexField.setAccessible(true);
+                int index = indexField.getInt(null);
+                arr = jitCompile(code, output, toPreExecute.length(), cells, index);
+            } else {
+                arr = jitCompile(code, "", 0, null, 0);
+            }
         } else {
             arr = jitCompile(code, "", 0, null, 0);
         }
@@ -323,16 +327,6 @@ public class Main {
                             il.add(new VarInsnNode(Opcodes.ILOAD, 2));
                             il.add(new InsnNode(Opcodes.BALOAD));
                             il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(C)V", false));
-                        }
-                    } else if (code.charAt(i) == '!') {
-                        if (methods) {
-                            il.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "BfJit", "print", "()V", false));
-                        } else {
-                            il.add(new FieldInsnNode(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-                            il.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                            il.add(new VarInsnNode(Opcodes.ILOAD, 2));
-                            il.add(new InsnNode(Opcodes.BALOAD));
-                            il.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false));
                         }
                     } else if (code.charAt(i) == ',') {
                         if (methods) {
